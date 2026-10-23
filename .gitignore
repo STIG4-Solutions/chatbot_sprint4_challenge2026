@@ -21,3 +21,7 @@ models_cache/
 
 # macOS
 .DS_Store
+
+# Vector store persistente (recriado por python -m src.rag.ingest)
+.chroma/
+.gradio/

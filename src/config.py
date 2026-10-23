@@ -1,5 +1,5 @@
 """
-Configuração central do ChargeGrid Intelligence, Sprint 3.
+Configuração central do ChargeGrid Intelligence (Sprints 3 e 4).
 
 Concentra a leitura das variáveis de ambiente e a construção do cliente de
 inferência, de modo que nenhum outro módulo precise conhecer credenciais ou
@@ -19,6 +19,9 @@ RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 DIRETORIO_PROMPTS = RAIZ_PROJETO / "prompts"
 DIRETORIO_EVALS = RAIZ_PROJETO / "evals"
 DIRETORIO_DOCS = RAIZ_PROJETO / "docs"
+DIRETORIO_BASE_CONHECIMENTO = RAIZ_PROJETO / "data" / "knowledge_base"
+DIRETORIO_PROMPTS_RAG = DIRETORIO_PROMPTS / "rag"
+DIRETORIO_CHROMA = RAIZ_PROJETO / ".chroma"
 
 load_dotenv(RAIZ_PROJETO / ".env")
 
@@ -74,6 +77,13 @@ class Configuracao:
     modelo_primario: str
     modelo_alternativo: str
     modelo_terceiro: str
+    # Embeddings (Sprint 4). A Ollama Cloud expõe apenas inferência de chat:
+    # `/api/embed` responde 401 e `/v1/embeddings` responde 404 com a mesma
+    # chave que autentica o chat. O `nomic-embed-text` roda, portanto, no
+    # servidor Ollama local, configurável por variável de ambiente.
+    embeddings_base_url: str = "http://localhost:11434"
+    modelo_embeddings: str = "nomic-embed-text"
+    diretorio_chroma: str = str(DIRETORIO_CHROMA)
     limite_tokens_memoria: int = 1200
     encoding_tiktoken: str = "o200k_harmony"
     prompt_padrao: str = "v3"
@@ -99,6 +109,9 @@ def carregar_configuracao() -> Configuracao:
         modelo_primario=os.getenv("OLLAMA_MODEL", "gpt-oss:120b").strip(),
         modelo_alternativo=os.getenv("OLLAMA_MODEL_ALT", "gpt-oss:20b").strip(),
         modelo_terceiro=os.getenv("OLLAMA_MODEL_ALT2", "gemma4:31b").strip(),
+        embeddings_base_url=os.getenv("OLLAMA_EMBED_BASE_URL", "http://localhost:11434").strip(),
+        modelo_embeddings=os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text").strip(),
+        diretorio_chroma=os.getenv("CHROMA_DIR", str(DIRETORIO_CHROMA)).strip(),
     )
 
 

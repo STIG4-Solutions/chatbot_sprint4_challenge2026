@@ -75,6 +75,7 @@ def versoes_de_prompt_disponiveis() -> list[str]:
 def criar_llm(
     parametros: ParametrosModelo,
     configuracao: Configuracao | None = None,
+    raciocinio: str | None = None,
 ) -> ChatOllama:
     """Instancia o `ChatOllama` apontado para o endpoint configurado.
 
@@ -85,6 +86,11 @@ def criar_llm(
 
     A credencial viaja apenas no cabeçalho `Authorization`, montado em tempo de
     execução a partir da variável de ambiente.
+
+    `raciocinio` define o esforço de raciocínio dos modelos que o expõem
+    (`gpt-oss`: "low", "medium", "high"). Nas chamadas auxiliares curtas do
+    RAG (expansão de consulta e reranking) usa-se "low": com o padrão, o
+    raciocínio consome todo o `num_predict` e o conteúdo volta vazio (Sprint 4).
     """
     configuracao = configuracao or carregar_configuracao()
     return ChatOllamaMensurado(
@@ -94,6 +100,7 @@ def criar_llm(
         top_p=parametros.top_p,
         num_predict=parametros.num_predict,
         seed=parametros.seed,
+        reasoning=raciocinio,
         client_kwargs={
             "headers": {"Authorization": f"Bearer {configuracao.api_key}"},
             "timeout": 180,

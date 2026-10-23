@@ -30,6 +30,8 @@ ENCODING_PADRAO = "o200k_harmony"
 # fim de turno). Valor conservador, alinhado ao formato harmony do gpt-oss.
 TOKENS_POR_MENSAGEM = 4
 
+TENTATIVAS_LIMITE_CONCORRENCIA = 6
+
 
 # ---------------------------------------------------------------------------
 # Contagem
@@ -80,6 +82,23 @@ class ChatOllamaMensurado(ChatOllama):
         self, messages: list[BaseMessage], tools: Sequence | None = None
     ) -> int:
         return CONTADOR.contar_mensagens(messages)
+
+    def _generate(self, *args, **kwargs):
+        """Inferência com retentativa em limite de concorrência do provedor.
+
+        O tier gratuito da Ollama Cloud responde HTTP 429 ("too many concurrent
+        requests") quando o eval, o reranqueador e o juiz do RAGAS disputam a
+        mesma conta. A retentativa com espera exponencial evita que um 429
+        vire resposta perdida no meio de uma medição (Sprint 4).
+        """
+        for tentativa in range(TENTATIVAS_LIMITE_CONCORRENCIA):
+            try:
+                return super()._generate(*args, **kwargs)
+            except Exception as excecao:
+                limite = "429" in str(excecao) or "too many" in str(excecao).lower()
+                if not limite or tentativa == TENTATIVAS_LIMITE_CONCORRENCIA - 1:
+                    raise
+                time.sleep(min(60, 2 ** (tentativa + 1)))
 
 
 # ---------------------------------------------------------------------------

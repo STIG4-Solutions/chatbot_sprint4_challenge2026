@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# ChargeGrid Intelligence · Sprint 3 (refactory LCEL)
+# ChargeGrid Intelligence · Sprints 3 e 4 (LCEL + RAG)
 # Faixa 0.3.x do LangChain: mantém os caminhos de import canônicos do
 # Módulo 1 (RunnableWithMessageHistory / ConversationTokenBufferMemory).
 # ---------------------------------------------------------------------------
@@ -31,3 +31,24 @@ python-dotenv>=1.1.0
 
 # Geração do relatório em PDF
 markdown-pdf>=1.7
+
+# ---------------------------------------------------------------------------
+# Sprint 4 · RAG medido, confiável e utilizável
+# ---------------------------------------------------------------------------
+
+# Vector store persistente e loader de PDF
+chromadb>=1.0.0
+langchain-chroma>=0.2.4,<0.3
+pymupdf>=1.25.0
+
+# Busca lexical do retriever híbrido
+rank_bm25>=0.2.2
+
+# Avaliação
+ragas>=0.4.0,<0.5
+
+# Interface web
+gradio>=6.0.0,<7
+
+# Testes
+pytest>=8.0.0
