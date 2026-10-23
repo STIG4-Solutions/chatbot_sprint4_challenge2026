@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-import fitz  # PyMuPDF
+import pymupdf
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.documents import Document
 
@@ -97,7 +97,7 @@ PADRAO_CABECALHO = re.compile(
 
 def sumario_por_pagina(caminho_pdf: Path) -> dict[int, list[str]]:
     """Títulos do sumário (bookmarks) do PDF agrupados por página (1-based)."""
-    with fitz.open(caminho_pdf) as documento:
+    with pymupdf.open(caminho_pdf) as documento:
         sumario = documento.get_toc(simple=True)
     por_pagina: dict[int, list[str]] = {}
     for _nivel, titulo, pagina in sumario:
