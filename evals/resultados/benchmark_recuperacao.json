@@ -1,0 +1,320 @@
+{
+ "casos_com_fonte_esperada": 22,
+ "linhas": [
+  {
+   "configuracao": "500/50 · sem prefixo · vetorial",
+   "k": 3,
+   "hit_arquivo": 0.591,
+   "mrr_arquivo": 0.462,
+   "hit_evidencia": 0.5,
+   "mrr_evidencia": 0.303,
+   "falhas_evidencia": [
+    2,
+    3,
+    4,
+    8,
+    9,
+    10,
+    12,
+    15,
+    17,
+    26,
+    27
+   ]
+  },
+  {
+   "configuracao": "500/50 · sem prefixo · vetorial",
+   "k": 6,
+   "hit_arquivo": 0.864,
+   "mrr_arquivo": 0.517,
+   "hit_evidencia": 0.545,
+   "mrr_evidencia": 0.314,
+   "falhas_evidencia": [
+    2,
+    3,
+    4,
+    8,
+    9,
+    10,
+    12,
+    15,
+    26,
+    27
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · vetorial",
+   "k": 3,
+   "hit_arquivo": 0.818,
+   "mrr_arquivo": 0.568,
+   "hit_evidencia": 0.545,
+   "mrr_evidencia": 0.318,
+   "falhas_evidencia": [
+    3,
+    4,
+    8,
+    9,
+    10,
+    12,
+    14,
+    15,
+    17,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · vetorial",
+   "k": 6,
+   "hit_arquivo": 0.909,
+   "mrr_arquivo": 0.587,
+   "hit_evidencia": 0.636,
+   "mrr_evidencia": 0.335,
+   "falhas_evidencia": [
+    3,
+    4,
+    8,
+    9,
+    10,
+    12,
+    15,
+    26
+   ]
+  },
+  {
+   "configuracao": "1000/150 · prefixo · vetorial",
+   "k": 3,
+   "hit_arquivo": 0.727,
+   "mrr_arquivo": 0.591,
+   "hit_evidencia": 0.455,
+   "mrr_evidencia": 0.348,
+   "falhas_evidencia": [
+    1,
+    2,
+    3,
+    4,
+    8,
+    10,
+    11,
+    12,
+    14,
+    17,
+    21,
+    26
+   ]
+  },
+  {
+   "configuracao": "1000/150 · prefixo · vetorial",
+   "k": 6,
+   "hit_arquivo": 0.727,
+   "mrr_arquivo": 0.591,
+   "hit_evidencia": 0.636,
+   "mrr_evidencia": 0.386,
+   "falhas_evidencia": [
+    2,
+    3,
+    4,
+    8,
+    10,
+    12,
+    14,
+    26
+   ]
+  },
+  {
+   "configuracao": "1500/250 · prefixo · vetorial",
+   "k": 3,
+   "hit_arquivo": 0.636,
+   "mrr_arquivo": 0.53,
+   "hit_evidencia": 0.455,
+   "mrr_evidencia": 0.341,
+   "falhas_evidencia": [
+    2,
+    3,
+    4,
+    8,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    17,
+    26
+   ]
+  },
+  {
+   "configuracao": "1500/250 · prefixo · vetorial",
+   "k": 6,
+   "hit_arquivo": 0.682,
+   "mrr_arquivo": 0.538,
+   "hit_evidencia": 0.545,
+   "mrr_evidencia": 0.359,
+   "falhas_evidencia": [
+    2,
+    3,
+    4,
+    8,
+    10,
+    12,
+    13,
+    14,
+    15,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida",
+   "k": 3,
+   "hit_arquivo": 0.818,
+   "mrr_arquivo": 0.72,
+   "hit_evidencia": 0.545,
+   "mrr_evidencia": 0.432,
+   "falhas_evidencia": [
+    2,
+    3,
+    8,
+    9,
+    10,
+    11,
+    12,
+    15,
+    17,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida",
+   "k": 6,
+   "hit_arquivo": 0.955,
+   "mrr_arquivo": 0.754,
+   "hit_evidencia": 0.682,
+   "mrr_evidencia": 0.466,
+   "falhas_evidencia": [
+    3,
+    8,
+    9,
+    10,
+    12,
+    15,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida · cabeçalho",
+   "k": 3,
+   "hit_arquivo": 0.773,
+   "mrr_arquivo": 0.727,
+   "hit_evidencia": 0.455,
+   "mrr_evidencia": 0.424,
+   "falhas_evidencia": [
+    1,
+    2,
+    3,
+    4,
+    8,
+    9,
+    10,
+    12,
+    17,
+    18,
+    21,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida · cabeçalho",
+   "k": 6,
+   "hit_arquivo": 0.864,
+   "mrr_arquivo": 0.746,
+   "hit_evidencia": 0.636,
+   "mrr_evidencia": 0.464,
+   "falhas_evidencia": [
+    3,
+    8,
+    9,
+    10,
+    12,
+    17,
+    21,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida · cabeçalho · expansão",
+   "k": 3,
+   "hit_arquivo": 0.682,
+   "mrr_arquivo": 0.659,
+   "hit_evidencia": 0.409,
+   "mrr_evidencia": 0.356,
+   "falhas_evidencia": [
+    1,
+    2,
+    3,
+    4,
+    8,
+    9,
+    12,
+    13,
+    16,
+    17,
+    18,
+    21,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida · cabeçalho · expansão",
+   "k": 6,
+   "hit_arquivo": 0.909,
+   "mrr_arquivo": 0.683,
+   "hit_evidencia": 0.591,
+   "mrr_evidencia": 0.428,
+   "falhas_evidencia": [
+    3,
+    4,
+    8,
+    10,
+    12,
+    13,
+    17,
+    21,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida · cabeçalho · expansão · rerank",
+   "k": 3,
+   "hit_arquivo": 0.727,
+   "mrr_arquivo": 0.727,
+   "hit_evidencia": 0.682,
+   "mrr_evidencia": 0.553,
+   "falhas_evidencia": [
+    3,
+    4,
+    8,
+    12,
+    18,
+    21,
+    26
+   ]
+  },
+  {
+   "configuracao": "500/50 · prefixo · híbrida · cabeçalho · expansão · rerank",
+   "k": 6,
+   "hit_arquivo": 0.909,
+   "mrr_arquivo": 0.734,
+   "hit_evidencia": 0.636,
+   "mrr_evidencia": 0.545,
+   "falhas_evidencia": [
+    3,
+    4,
+    8,
+    10,
+    17,
+    18,
+    21,
+    26
+   ]
+  }
+ ]
+}
