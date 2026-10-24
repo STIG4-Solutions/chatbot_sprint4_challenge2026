@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#fff;font-family:Helvetica,Arial,sans-serif;color:#111}
+.w{width:1400px;padding:28px 32px}
+h1{font-size:22px;margin:0 0 4px} p.s{margin:0 0 18px;color:#555;font-size:13px}
+.row{display:flex;gap:14px;align-items:stretch;margin-bottom:12px}
+.lane{border:1.5px solid #222;border-radius:8px;padding:12px 14px;flex:1;background:#fafafa}
+.lane h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:#333}
+.box{border:1.2px solid #444;border-radius:6px;padding:8px 10px;background:#fff;font-size:12.5px;margin-bottom:7px;line-height:1.35}
+.box b{display:block;font-size:13px;margin-bottom:2px}
+.g{background:#eef6ee;border-color:#2d6a2d}.r{background:#fbeeee;border-color:#8a2a2a}.b{background:#eef2fb;border-color:#2a4a8a}.y{background:#fbf6e6;border-color:#8a6d1a}
+.arrow{font-size:22px;align-self:center;color:#333}
+.foot{font-size:12px;color:#444;margin-top:6px}
+</style></head><body><div class="w">
+<h1>ChargeGrid Intelligence · Arquitetura do RAG (Sprint 4)</h1>
+<p class="s">GoodWe × FIAP · EV Challenge 2026 · operador comercial de eletropostos · cada caixa corresponde a um módulo do repositório</p>
+<div class="row">
+ <div class="lane"><h2>1 · Ingestão (offline)</h2>
+  <div class="box y"><b>data/knowledge_base/</b>16 PDFs · manifesto.json com tipo (oficial, projeto, não verificada) e origem conferida por hash</div>
+  <div class="box"><b>loader.py · PyMuPDFLoader</b>página a página · limpeza · seção (bookmarks) e artigos</div>
+  <div class="box"><b>chunking.py · RecursiveCharacterTextSplitter</b>500/50 · descarte de sumário · cabeçalho [documento · seção · Art.]</div>
+  <div class="box r"><b>guardrails/document_injection.py</b>frase com instrução embutida → marcador de remoção · fragmento marcado suspeito</div>
+  <div class="box b"><b>embeddings.py · nomic-embed-text (Ollama local)</b>prefixos search_document / search_query</div>
+  <div class="box b"><b>vector_store.py · ChromaDB persistente</b>.chroma/ · cosseno · coleção por configuração</div>
+ </div>
+ <div class="arrow">→</div>
+ <div class="lane"><h2>2 · Consulta (por turno)</h2>
+  <div class="box r"><b>Guardrails de entrada (Sprint 3)</b>jailbreak · injeção · jurídico · financeiro · segurança elétrica · escopo → recusa sem LLM</div>
+  <div class="box"><b>Reescrita com histórico</b>só em continuação ("e no horário de ponta?")</div>
+  <div class="box g"><b>retriever.py + reranking.py</b>expansão PT/EN (gpt-oss:20b) · vetorial + BM25 · fusão RRF · rerank por LLM · ≤ 3 trechos por documento · k = 6</div>
+  <div class="box"><b>prompt_rag.py</b>&lt;trecho id documento pagina tipo artigos&gt; com marcação escapada</div>
+  <div class="box g"><b>prompts/rag/prompt_rag_v4.md | ChatOllama gpt-oss:120b</b>Ollama Cloud · temperature 0 · JSON</div>
+ </div>
+ <div class="arrow">→</div>
+ <div class="lane"><h2>3 · Saída e memória</h2>
+  <div class="box"><b>RespostaRAG (Pydantic v2)</b>resposta com [n] · ids validados contra os trechos · contexto_suficiente</div>
+  <div class="box r"><b>Validação de especificação de produto</b>bloqueia especificação sem fundamento no contexto</div>
+  <div class="box g"><b>Citação montada em código</b>documento · página · artigo ou seção · tipo de fonte (o modelo não escreve a fonte)</div>
+  <div class="box"><b>Memória da sessão</b>histórico por session_id · orçamento de 1.200 tokens</div>
+  <div class="box y"><b>app/app.py · Gradio</b>chat · fontes citadas · trechos recuperados · diagnóstico · comparação multi-provider</div>
+ </div>
+</div>
+<div class="row">
+ <div class="lane"><h2>4 · Avaliação (evals/)</h2>
+  <div class="box">rag_eval_set.json: 30 casos (happy path, sem resposta na base, fora de escopo, injeção pela pergunta e via documento, recusa de domínio) · RAGAS faithfulness, answer_relevancy, context_recall com juiz fixo · rubrica manual de fallback · hit e MRR da evidência · 4 iterações + baselines das Sprints 1/2 e 3 · benchmark de recuperação sem LLM · multi-provider modelos × prompts</div>
+ </div>
+</div>
+<div class="foot">Cores: verde = geração fundamentada · vermelho = segurança · azul = vetorização · amarelo = dados e interface</div>
+</div></body></html>
