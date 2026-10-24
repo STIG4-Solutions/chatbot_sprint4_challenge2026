@@ -45,7 +45,7 @@ hr { border: 0; border-top: 0.6pt solid #000000; margin: 10pt 0; }
 def main() -> int:
     pdf = MarkdownPdf(toc_level=0, optimize=True)
     pdf.add_section(Section(FONTE.read_text(encoding="utf-8"), paper_size="A4"), user_css=CSS)
-    pdf.meta["title"] = "Relatório de evolução do projeto · ChargeGrid Intelligence Sprint 3"
+    pdf.meta["title"] = "Relatório de evolução do projeto · ChargeGrid Intelligence Sprint 4"
     pdf.meta["author"] = "Grupo 2 · Turma 1CCR · FIAP"
     pdf.save(DESTINO)
     print(f"gerado: {DESTINO.name}")

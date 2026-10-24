@@ -1,0 +1,44 @@
+Sprint 4 - RAG medido, confiavel e utilizavel
+EV Challenge 2026 | GoodWe x FIAP
+Disciplina: Prompt and Artificial Intelligence
+Professor: Jorge Luiz Gomes
+Turma: 1CCR | Grupo 2
+Projeto: ChargeGrid Intelligence (Contexto A, recarga comercial)
+
+INTEGRANTES
+--------------------------------------------------
+Nome                       RM        Turma
+Gabriel Freitas            572943    1CCR
+Giovanni Merlotti          573721    1CCR
+Glauco Kelly               572840    1CCR
+Sergio Augusto Amaral      570184    1CCR
+
+REPOSITORIO
+--------------------------------------------------
+https://github.com/STIG4-Solutions/chatbot_sprint4_challenge2026
+
+RELATORIO DE EVOLUCAO DO PROJETO (PDF, ate 5 paginas)
+--------------------------------------------------
+docs/relatorio_evolucao.pdf
+
+INTERFACE WEB
+--------------------------------------------------
+app/ (Gradio). Execucao: python -m app.app  ->  http://127.0.0.1:7860
+Instrucoes completas em app/README.md
+
+DEMAIS ENTREGAVEIS
+--------------------------------------------------
+docs/relatorio_rag.md        pipeline, base, chunking, avaliacao e seguranca
+docs/relatorio_modelos.md    comparativo de modelos e parametros
+prompts/rag/VERSIONS.md      prompt RAG versionado com ganho medido
+evals/                       eval set, RAGAS + rubrica de fallback, resultados por iteracao
+
+OBSERVACOES
+--------------------------------------------------
+- Continuacao do projeto das Sprints 1, 2 e 3. O historico Git das entregas
+  anteriores foi preservado neste repositorio.
+- LLM: gpt-oss:120b via ChatOllama (Ollama Cloud). Embeddings:
+  nomic-embed-text no Ollama local (a Ollama Cloud nao expoe o endpoint de
+  embeddings; ver docs/relatorio_rag.md).
+- Nenhuma credencial no codigo ou no historico. Chave via variavel de
+  ambiente, com .env no .gitignore e .env.example como referencia.

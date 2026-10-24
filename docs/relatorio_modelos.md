@@ -1,172 +1,189 @@
-# Relatório de uso de modelos e parâmetros
+# Relatório de uso de modelos e parâmetros · Sprint 4
 
-**ChargeGrid Intelligence · Sprint 3 · EV Challenge 2026 · GoodWe × FIAP**
+Comparativo de modelos no pipeline RAG e efeito de `temperature`, `k`, `top_p`
+e `max_tokens`. Todos os números vêm de `evals/resultados/*.json`, gerados por
+`scripts/reproduzir_avaliacoes.sh`. O relatório de modelos da Sprint 3, sobre o
+núcleo conversacional sem RAG, está preservado no histórico Git deste arquivo.
 
-Documento exigido pelo item §6.2 do escopo. Todos os números vêm de execução do
-conjunto de avaliação do projeto (`evals/eval_set.json`, 15 casos) e podem ser
-reproduzidos a partir do repositório:
+## 1. Método
 
-```bash
-python -m evals.comparar_modelos --temperatura
-```
+- **Configuração fixa:** a da iteração 4 (`--preset it4`): prompt RAG v4, chunk
+  500/50 com cabeçalho contextual, prefixos do nomic, busca híbrida, expansão de
+  consulta, reranking, k=6.
+- **Eval set:** os mesmos 30 casos de `evals/rag_eval_set.json`.
+- **Juiz RAGAS fixo** (`gpt-oss:120b`, temperature 0) para todos os modelos
+  avaliados, inclusive quando o modelo avaliado é o próprio `gpt-oss:120b`. O
+  viés de autoavaliação existe; ele é limitado porque o juiz verifica
+  afirmações contra o contexto, e não preferência de estilo.
+- **Uma passada por configuração**, por limite de cota do tier gratuito. A
+  expansão e o reranking usam um LLM auxiliar, e a recuperação varia entre
+  passadas mesmo com temperature 0: o hit da evidência variou de 0,636 a 0,727
+  entre execuções com o mesmo retriever. Diferenças menores do que cerca de 0,1
+  nas métricas que dependem da recuperação não são conclusivas.
 
-Resultados brutos em `evals/comparativo_modelos.json`.
+## 2. Comparativo de modelos
 
----
+Todos servidos pela Ollama Cloud, via `ChatOllama`, com os mesmos parâmetros de
+geração (temperature 0, top_p 0,9, max_tokens 1200, seed 7).
 
-## 1. Infraestrutura de inferência
+| Métrica | gpt-oss:120b | gpt-oss:20b | gemma4:31b |
+|---|---|---|---|
+| Fabricante | OpenAI (open-weight) | OpenAI (open-weight) | Google |
+| faithfulness (RAGAS) | 0,762 | 0,715 | **0,785** |
+| faithfulness das respostas dadas | 0,803 | 0,775 | **0,933** |
+| faithfulness efetiva (× cobertura) | **0,694** | 0,670 | 0,679 |
+| answer_relevancy (RAGAS) | 0,728 | **0,765** | 0,617 |
+| context_recall (RAGAS) | 0,485 | 0,492 | 0,485 |
+| relevância (rubrica) | **0,636** | 0,538 | 0,576 |
+| respondeu quando devia | **0,864** | **0,864** | 0,727 |
+| acerto de recusa | 0,875 | **1,000** | **1,000** |
+| citação com documento e página | **1,000** | 0,947 | **1,000** |
+| resistência a injeção | 1,000 | 1,000 | 1,000 |
+| erros de contrato (JSON inválido) | **0** | 1 | **0** |
+| latência média por pergunta | 9,7 s | 25,3 s | **8,4 s** |
 
-| Item | Escolha |
-|---|---|
-| Classe de cliente | `ChatOllama` (`langchain-ollama`) |
-| Endpoint | `https://ollama.com`, Ollama Cloud |
-| Autenticação | `Authorization: Bearer $OLLAMA_API_KEY`, via `client_kwargs` |
-| Modelo primário | `gpt-oss:120b` |
-| Segundo modelo | `gpt-oss:20b`, mesma família, porte menor |
-| Terceiro modelo | `gemma4:31b`, família distinta |
-| Janela de contexto | 128k tokens |
+**Escolha: `gpt-oss:120b` como modelo primário.** É o que mais responde sem
+perder fidelidade (maior faithfulness efetiva e maior relevância pela rubrica),
+não teve erro de contrato e mantém a latência abaixo de 10 s. O `gemma4:31b` é
+o mais fiel no que responde (0,933) e o mais rápido, mas recusa mais (respondeu
+72,7% das perguntas respondíveis contra 86,4%) e tem a menor answer_relevancy:
+é conservador. Fica configurado como `OLLAMA_MODEL_ALT2` e é a alternativa para
+um cenário em que errar custa mais do que deixar de responder. O
+`gpt-oss:20b` foi o mais lento na nuvem (25 s), teve uma saída fora do
+contrato JSON e é o pior em faithfulness; continua como modelo auxiliar da
+expansão e do reranking, onde a tarefa é curta e roda com `reasoning="low"`.
 
-A execução local foi descartada por restrição de hardware: `gpt-oss:120b` exige
-cerca de 65 GB e `gpt-oss:20b` cerca de 13 GB de armazenamento, contra 14 GB
-livres e 16 GB de memória na máquina de desenvolvimento. A Ollama Cloud serve o
-modelo exato exigido pelo escopo através da mesma classe `ChatOllama`, sem
-consumo de disco: apenas a `base_url` e o cabeçalho de autenticação mudam em
-relação a uma instalação local.
+**Modelos testados e descartados.** `deepseek-v4.1-flash` e
+`mistral-large-3:675b` não concluíram uma resposta do pipeline em 150 s na
+sonda de disponibilidade e ficaram fora do comparativo. Na primeira rodada
+completa, o `gemma4:31b` manteve o stream aberto sem concluir por mais de uma
+hora; o executor do eval passou a ter timeout de 300 s por caso.
 
-**Modelos verificados e descartados.** A escolha do terceiro modelo foi feita por
-teste de disponibilidade, não por preferência. `qwen3.5:397b`,
-`deepseek-v4.1-flash` e `glm-5.3-flash` respondem `this model is not included in
-your free usage`, e por isso ficaram fora. `gemma4:31b` respondeu normalmente e
-foi adotado como representante de família distinta.
+## 3. Parâmetros
 
----
+### temperature = 0 (recomendado pelo escopo e adotado)
 
-## 2. Parâmetros de geração
+Varreduras sem RAGAS (rubrica, recusa, citação e recuperação), para caber na cota do tier gratuito; a linha de base é a it4, com o mesmo modelo.
 
-| Parâmetro | Valor de produção | Justificativa |
+| Métrica | temperature 0 (it4) | temperature 0,7 |
 |---|---|---|
-| `temperature` | **0,2** | Melhor resultado medido em duas varreduras independentes: 80,6 contra 76,1 em 0,0 e 73,9 em 0,7 na última, com a mesma ordenação na anterior. O assistente produz orientação operacional e regulatória, onde variação de conteúdo entre execuções é indesejável, mas a amostragem estritamente gulosa mostrou-se pior. Ver §4 |
-| `top_p` | **0,9** | Descarta a cauda de baixa probabilidade sem estreitar o vocabulário técnico do domínio, como nomes de protocolo, unidades e referências normativas |
-| `max_tokens` (`num_predict`) | **1.400** | A resposta estruturada típica consome cerca de 950 tokens. Em 900 o JSON era truncado antes do fechamento (`done_reason: length`), invalidando o contrato de saída; 1.400 dá margem sem permitir divagação |
-| `seed` | nulo em produção | Testada e descartada: o endpoint gerenciado não produz saída determinística nem com `seed` fixa e `temperature=0`. Ver §5 |
+| fidelidade (rubrica) | 0,579 | 0,605 |
+| relevância (rubrica) | 0,636 | 0,595 |
+| acerto de recusa | 0,875 | 0,875 |
+| respondeu quando devia | 0,864 | 0,864 |
+| citação com doc. e página | 1,000 | 1,000 |
+| hit da evidência | 0,727 | 0,682 |
+| MRR da evidência | 0,604 | 0,614 |
+| erros de contrato | 0 | 0 |
+| tokens de entrada | 1921,5 | 1937,6 |
+| latência (s) | 9,702 | 12,866 |
 
-Definidos em `src/config.py`, na classe `ParametrosModelo`, com a justificativa
-registrada no próprio código.
+As diferenças são pequenas e em sentidos opostos (fidelidade pela rubrica
++0,026, relevância −0,041, MRR +0,010), dentro da variação entre passadas
+observada na recuperação: a amostragem não trouxe ganho consistente, aumentou a
+latência e tira a reprodutibilidade. Mantém-se 0.
 
----
+O RAG deve ser função do contexto recuperado, não da amostragem. Com
+temperature 0 a decodificação é gulosa: a mesma pergunta com o mesmo contexto
+produz, na prática, a mesma resposta, o que torna as iterações comparáveis.
 
-## 3. Matriz de modelos por versões de prompt
+### top_p = 0,9
 
-Cada célula é uma execução completa do conjunto de 15 casos, **com a camada de
-guardrails desligada**. A camada é determinística e responde de forma idêntica sob
-qualquer modelo: mantê-la ativa uniformizaria 8 dos 15 casos e esconderia
-justamente a diferença que esta matriz precisa medir. Os números abaixo
-representam o que cada modelo sustenta por conta própria, não o comportamento do
-sistema em produção, que está em `evals/sprint3_results.json`.
+Com temperature 0 o `top_p` **não tem efeito**: a decodificação gulosa escolhe
+sempre o token mais provável, e o corte de massa de probabilidade só atua
+quando há amostragem. O valor 0,9 é mantido para que, se a temperature for
+elevada (por exemplo, para variar o estilo na interface), a amostragem já
+exclua a cauda de tokens improváveis, que é onde nascem números e nomes
+inventados. Por isso não foi feita varredura de `top_p` em temperature 0: ela
+mediria ruído.
 
-| Modelo | Prompt | Nota | Acerto de escopo | Structured output | Tokens/turno | Latência | Adequadas | Inadequadas |
-|---|---|---|---|---|---|---|---|---|
-| **gpt-oss:120b** | v2 | 71,1 | 80,0% | 0% | 1.005 | 2,23 s | 7 | 4 |
-| **gpt-oss:120b** | **v3** | 76,1 | 73,3% | **100%** | 2.487 | 2,48 s | 8 | 4 |
-| gpt-oss:20b | v2 | 46,1 | 46,7% | 0% | 1.036 | 9,77 s | 5 | 9 |
-| gpt-oss:20b | v3 | 67,8 | 73,3% | 93,3% | 2.463 | 12,42 s | 4 | 5 |
-| gemma4:31b | v2 | 65,0 | 60,0% | 0% | 1.033 | 2,30 s | 5 | 6 |
-| gemma4:31b | **v3** | **83,3** | 80,0% | **100%** | 2.485 | **1,23 s** | 8 | 3 |
+### k (trechos no contexto) = 6
 
-### Leitura
+Varreduras sem RAGAS (rubrica, recusa, citação e recuperação), para caber na cota do tier gratuito; a linha de base é a it4, com o mesmo modelo.
 
-**O contrato de saída move mais o resultado do que a troca de modelo.** Em todos
-os três modelos, passar da v2 para a v3 melhora a nota, e o salto é maior no
-modelo mais fraco: `gpt-oss:20b` ganha 21,7 pontos, `gemma4:31b` ganha 18,3 e
-`gpt-oss:120b` ganha 5,0. O schema restringe o espaço de resposta a ponto de o
-modelo menor conseguir preenchê-lo corretamente, o que estreita a distância entre
-os modelos: sob a v2 a diferença entre o melhor e o pior é de 25,0 pontos; sob a
-v3, cai para 15,5.
+| Métrica | k = 3 | k = 6 (it4) | k = 10 |
+|---|---|---|---|
+| fidelidade (rubrica) | 0,583 | 0,579 | 0,684 |
+| relevância (rubrica) | 0,561 | 0,636 | 0,538 |
+| acerto de recusa | 1,000 | 0,875 | 1,000 |
+| respondeu quando devia | 0,818 | 0,864 | 0,864 |
+| citação com doc. e página | 1,000 | 1,000 | 1,000 |
+| hit da evidência | 0,636 | 0,727 | 0,636 |
+| MRR da evidência | 0,591 | 0,604 | 0,494 |
+| erros de contrato | 0 | 0 | 0 |
+| tokens de entrada | 1729,8 | 1921,5 | 2088,3 |
+| latência (s) | 10,170 | 9,702 | 9,627 |
 
-**O modelo menor é mais lento, não mais rápido.** Este é o resultado
-contraintuitivo da matriz: `gpt-oss:20b` levou 9,77 s contra 2,23 s do `120b` na
-v2, e 12,42 s contra 2,48 s na v3, entre 4,4 e 5,0 vezes mais tempo. O número não
-mede a eficiência do modelo, mede a infraestrutura que o serve: na Ollama Cloud o
-`gpt-oss:120b` é o modelo de maior demanda e recebe alocação e otimização
-correspondentes. Em uma instalação local a relação se inverteria. A conclusão
-prática é específica deste ambiente e está registrada como tal.
+Com k=3 o assistente responde menos (81,8%) e cobre menos elementos da
+referência: o trecho certo fica de fora do contexto com mais frequência. Com
+k=10 a evidência recuperada não aumenta, porque o reranking e o limite de 3
+trechos por documento já filtram os candidatos, e o contexto cresce sem trazer
+informação nova. A relevância cai porque o modelo passa a misturar trechos
+tangenciais. k=6 é o melhor ponto entre cobertura e foco.
 
-**O `gemma4:31b` mediu acima do modelo primário, e isso é reportado como está.**
-Sob a v3, obteve 83,3 contra 76,1 do `gpt-oss:120b`, com metade da latência
-(1,23 s contra 2,48 s) e o mesmo custo em tokens. A diferença de 7,2 pontos foi
-obtida em passada única por célula, e o desvio entre passadas nesta configuração
-é da ordem de ±4,5 pontos (medido em `prompts/VERSIONS.md`), de modo que o
-resultado é sugestivo e **não conclusivo**: confirmá-lo exigiria repetir a matriz.
-O registro fica porque o dado é o que é, e porque ele reforça a leitura anterior,
-a de que a escolha de modelo não é o fator dominante neste sistema.
+### max_tokens (num_predict) = 1200
 
-### Escolha
+Varreduras sem RAGAS (rubrica, recusa, citação e recuperação), para caber na cota do tier gratuito; a linha de base é a it4, com o mesmo modelo.
 
-**`gpt-oss:120b` com prompt v3.** É o modelo nomeado no escopo da Sprint 3, tem a
-melhor latência entre os modelos da própria família neste ambiente e sustenta 100%
-de saída válida. O `gemma4:31b` fica registrado em `OLLAMA_MODEL_ALT2` como
-alternativa imediata, com resultado medido igual ou superior, e o `gpt-oss:20b` em
-`OLLAMA_MODEL_ALT` como contingência de menor porte. Qualquer das trocas é feita
-por variável de ambiente, sem alteração de código.
+| Métrica | max_tokens 1200 (it4) | max_tokens 250 |
+|---|---|---|
+| fidelidade (rubrica) | 0,579 | 0,000 |
+| relevância (rubrica) | 0,636 | 0,068 |
+| acerto de recusa | 0,875 | 0,750 |
+| respondeu quando devia | 0,864 | 1,000 |
+| citação com doc. e página | 1,000 | 0,000 |
+| hit da evidência | 0,727 | 0,682 |
+| MRR da evidência | 0,604 | 0,577 |
+| erros de contrato | 0 | 24 |
+| tokens de entrada | 1921,5 | 1927,2 |
+| latência (s) | 9,702 | 19,143 |
 
----
+Com 250 tokens, 24 dos 30 casos terminam sem JSON válido: o raciocínio do
+`gpt-oss` consome o orçamento antes do conteúdo, e o pipeline devolve a
+mensagem de erro de contrato. "Respondeu quando devia" sobe para 1,000 só porque
+erro de contrato não é contado como recusa, e a relevância cai para 0,068.
 
-## 4. Varredura de `temperature`
+O `gpt-oss` é um modelo de raciocínio: parte do `num_predict` é consumida pelo
+raciocínio antes do conteúdo. O efeito foi observado diretamente nas chamadas
+auxiliares: com 700 tokens e o raciocínio padrão, a expansão de consulta
+voltava **vazia** de forma intermitente (na sonda de diagnóstico, as duas
+chamadas terminaram com `done_reason=length`, 700 tokens de saída e conteúdo
+vazio; com `reasoning="low"` a mesma chamada respondeu em 1,1 s usando 74
+tokens). A correção foi `reasoning="low"` e 2.500 tokens nas chamadas
+auxiliares; na geração principal, 1.200 tokens cobrem raciocínio e o JSON da
+resposta, de cerca de 150 a 300 tokens.
 
-Modelo `gpt-oss:120b`, prompt v3, uma execução completa do conjunto por valor.
+## 4. Bônus: chamada multi-provider (mais de um modelo e mais de um prompt)
 
-| `temperature` | Nota | Acerto de escopo | Structured output | Latência |
-|---|---|---|---|---|
-| 0,0 | 76,1 | 80,0% | 100% | 2,11 s |
-| **0,2** | **80,6** | **93,3%** | 100% | 2,37 s |
-| 0,7 | 73,9 | 73,3% | 100% | 2,44 s |
+`src/multiprovider.py` recupera o contexto **uma vez** e envia a mesma pergunta,
+com o mesmo contexto, a todas as combinações de modelo e versão de prompt, em
+paralelo. Fixar o contexto isola o efeito de modelo e prompt. A mesma função
+alimenta a aba "Comparar modelos e prompts" da interface, e
+`evals/comparar_multiprovider.py` mede a matriz em 8 casos do eval set.
 
-A saída estruturada permaneceu em 100% nos três valores: o contrato é sustentado
-pelo schema e pelo modo JSON do cliente, não pela temperatura.
+Casos 1, 3, 7, 12, 14, 19, 21 e 26 (happy path, sem resposta na base e injeção via documento), 3 modelos × 2 prompts = 48 chamadas, resultados em `evals/resultados/multiprovider.json`.
 
-O ponto de atenção é que `temperature=0,0` ficou **abaixo** de 0,2, contrariando a
-expectativa de que amostragem gulosa produziria a resposta mais aderente. Com uma
-única passada por valor, a diferença de 4,5 pontos está próxima do desvio entre
-passadas desta configuração e não deve ser lida isoladamente como conclusiva. O
-que sustenta a escolha é a repetição do padrão: uma varredura anterior, executada
-em outro momento, também colocou 0,2 à frente de 0,0 e de 0,7. Adotou-se 0,2 por
-ser o melhor valor nas duas medições e por manter baixa a dispersão de tom entre
-execuções.
+| Modelo | Fabricante | Prompt | JSON válido | Citação presente | Relevância (rubrica) | Violações | Latência média |
+|---|---|---|---|---|---|---|---|
+| gpt-oss:120b | OpenAI (open-weight) | v1 | 1,000 | 1,000 | 0,571 | 0 | 18,38 s |
+| gpt-oss:120b | OpenAI (open-weight) | v4 | 1,000 | 0,833 | 0,548 | 0 | 12,18 s |
+| gpt-oss:20b | OpenAI (open-weight) | v1 | 0,875 | 0,833 | 0,452 | 0 | 13,8 s |
+| gpt-oss:20b | OpenAI (open-weight) | v4 | 0,750 | 0,833 | 0,417 | 0 | 15,56 s |
+| gemma4:31b | Google | v1 | 1,000 | 1,000 | 0,667 | 0 | 18,11 s |
+| gemma4:31b | Google | v4 | 1,000 | 1,000 | 0,667 | 0 | 12,27 s |
 
----
+**Leitura.** Com o contexto fixo, a versão do prompt muda pouco a relevância
+dentro de cada modelo (0,571 contra 0,548 no `gpt-oss:120b`; 0,667 e 0,667 no
+`gemma4:31b`): o que a v4 acrescenta é comportamento nos limites, isto é,
+grounding, recusa e tratamento de fonte não verificada, e isso aparece no eval
+completo (`prompts/rag/VERSIONS.md`), não nesta matriz de 8 casos. O que a
+matriz mostra com clareza é a diferença entre modelos: o `gpt-oss:20b` quebra o
+contrato JSON em 12,5% a 25% das chamadas, e nenhum modelo, com nenhum prompt,
+reproduziu a instrução plantada no fórum (0 violações em 48 chamadas).
 
-## 5. Determinismo
-
-O endpoint gerenciado **não** produz saída determinística. O mesmo prompt,
-submetido três vezes com `temperature=0` e `seed=42`, retornou três redações
-distintas; sem `seed`, duas. A causa é o agrupamento de requisições no servidor,
-que altera a ordem de redução em ponto flutuante independentemente dos parâmetros
-de amostragem.
-
-Consequência metodológica: nenhuma métrica central deste projeto é reportada a
-partir de uma única execução. O executor do eval aceita `--repeticoes N` e o
-módulo `evals/agregacao.py` consolida média, mínimo, máximo e desvio padrão,
-preservando as passadas individuais. A tabela de comparativo antes e depois do
-relatório de evolução reporta três passadas por arquitetura, e as duas
-arquiteturas são medidas na mesma invocação, para que a coluna de latência não
-compare janelas de tempo diferentes.
-
----
-
-## 6. Bônus: chamada multi-provider
-
-O item §6.5 pede consultar mais de um modelo e mais de um prompt. A matriz do §3
-é exatamente isso: **3 modelos por 2 versões de system prompt**, seis execuções
-completas do conjunto de avaliação, com resultados comparados sob os mesmos
-parâmetros. Somada à varredura do §4, são nove execuções do conjunto, todas
-gravadas em `evals/comparativo_modelos.json`.
-
-A troca de modelo e de prompt é parametrizada:
-
-```bash
-OLLAMA_MODEL=gemma4:31b python -m src.cli v2
-```
-
-`src/chain/builder.py` carrega a versão de prompt pedida a partir de `prompts/` e
-`src/config.py` resolve o modelo a partir do ambiente. Nenhuma das duas trocas
-exige alteração de código.
+**Provedores.** Os modelos são de fabricantes distintos (OpenAI e Google),
+servidos pela mesma API da Ollama Cloud. O código também suporta a OpenAI como
+segundo provedor (`openai:<modelo>`, via `langchain-openai`), habilitado quando
+`OPENAI_API_KEY` está no ambiente. A chave da OpenAI usada nas Sprints 1 e 2
+está sem crédito (HTTP 429 `insufficient_quota`), por isso esse provedor não
+entrou na medição.
